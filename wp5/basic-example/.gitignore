@@ -1,0 +1,10 @@
+.env
+.venv
+.ruff_cache
+.python-version
+
+opt/out/
+
+opt/files/data.csv
+opt/files/heat_elec.csv
+opt/files/strompool_request_prices.json

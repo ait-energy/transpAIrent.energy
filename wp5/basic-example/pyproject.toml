@@ -1,0 +1,17 @@
+[project]
+name = "wp5-showcase"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "iesopt>=2.2.1",
+    "plotly>=5.24.1",
+    "python-dotenv>=1.0.1",
+    "requests>=2.32.3",
+]
+
+[dependency-groups]
+dev = [
+    "ruff>=0.8.6",
+]

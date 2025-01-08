@@ -1,0 +1,164 @@
+parameters:
+  biogas_storage_size: 20_000
+  biogas_storage_lb: 0.50
+  heat_scale: 1.0
+  battery: 0.0
+  fixed_gas_mix: true
+
+config:
+  general:
+    version:
+      core: 2.2.2
+    verbosity:
+      core: info
+      solver: off
+      progress: off
+  optimization:
+    problem_type: LP
+    solver:
+      name: highs
+      attributes:
+        solver: ipm
+    snapshots:
+      count: 768  # 2880
+      weight: 0.25
+  files:
+    inputs: data.csv
+    efficiency: heat_elec.csv
+
+carriers:
+  electricity: {}   # kWh
+  heat: {}          # kWh
+  biogas: {}        # kWh
+  solar: {}         # kWh
+
+components:
+  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  
+  energy_supplier:
+    type: Profile
+    carrier: electricity
+    node_from: node_energy_supplier
+    mode: destroy
+    cost: -da_price@inputs
+
+  node_energy_supplier:
+    type: Node
+    carrier: electricity
+
+  tariffs_grid:
+    type: Connection
+    node_from: node_zp1
+    node_to: node_energy_supplier
+    lb: 0
+    ub: tariffs_grid_peak:value
+    cost: 0.02                        # EUR/kWh energy costs
+  
+  tariffs_grid_peak:
+    type: Decision
+    lb: 0
+    ub: 5000
+    cost: 5.0                         # EUR/kWp/month power costs
+
+  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  node_zp1:
+    type: Node
+    carrier: electricity
+  
+  node_heat:
+    type: Node
+    carrier: heat
+    has_state: true
+    state_lb: 0
+    state_ub: 500
+  
+  heat_blowout:
+    type: Profile
+    carrier: heat
+    node_from: node_heat
+    mode: destroy
+
+  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  
+  demand_electricity_self:
+    type: Profile
+    carrier: electricity
+    node_from: node_zp1
+    value: 82.5
+
+  demand_heat:
+    type: Profile
+    carrier: heat
+    node_from: node_heat
+    value: 35.0 * <heat_scale>
+
+  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  
+  biogas_fermenter:
+    type: Profile
+    carrier: biogas
+    node_to: biogas_storage
+    mode: ranged
+    lb: 390
+    ub: 550
+    cost: 0.25
+
+  biogas_torch:
+    type: Profile
+    carrier: biogas
+    node_from: biogas_storage
+    mode: destroy
+
+  biogas_storage:
+    type: Node
+    carrier: biogas
+    has_state: true
+    state_cyclic: geq
+    state_lb: <biogas_storage_size> * <biogas_storage_lb>
+    state_ub: <biogas_storage_size>
+
+  bhkw:
+    type: Unit
+    inputs: {biogas: biogas_storage}
+    outputs: {electricity: node_zp1, heat: node_heat}
+    conversion: 1 biogas -> (<fixed_gas_mix>*0.420 + (1 - <fixed_gas_mix>)*elec@efficiency) electricity + (<fixed_gas_mix>*0.16 + (1 - <fixed_gas_mix>)*heat@efficiency) heat
+    capacity: 250 out:electricity
+
+  pv:
+    type: Unit
+    outputs: {electricity: node_zp1}
+    conversion: ~ -> 1 electricity
+    capacity: 190 out:electricity
+    availability_factor: P@inputs
+
+  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  battery_storage:
+    type: Node
+    carrier: electricity
+    has_state: true
+    state_cyclic: geq
+    state_lb: 0
+    state_ub: <battery>
+  
+  battery_charger:
+    type: Connection
+    node_from: node_zp1
+    node_to: battery_storage
+    lb: 0
+    ub: <battery> / 4.0
+    loss: 0.025
+
+  battery_discharger:
+    type: Connection
+    node_from: battery_storage
+    node_to: node_zp1
+    lb: 0
+    ub: <battery> / 4.0
+    loss: 0.025
