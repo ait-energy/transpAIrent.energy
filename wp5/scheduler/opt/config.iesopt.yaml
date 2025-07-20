@@ -106,8 +106,8 @@ components:
     node_to: grid_int
     value: pv_s@data + pv_l@data
   
-  # NOTE: `pv_combined@data` can contain negative values (consumption), which is why we need to limit the remaining
-  #       `ub` using `max(0, ...)` to prevent infeasible models as soon as `ub = pv_combined@data < 0 = lb`.
+  # NOTE: `pv_***@data` can contain negative values (consumption), which is why we need to limit the remaining
+  #       `ub` using `max(0, ...)` to prevent infeasible models as soon as `ub = pv_***@@data < 0 = lb`.
   pv_curtailment:
     type: Profile
     carrier: electricity
@@ -134,7 +134,7 @@ components:
     state_ub: <battery_soc_max> * <battery_e>
     state_percentage_loss: <battery_loss>
     state_cyclic: geq
-    state_initial: <battery_soc_t0>
+    state_initial: <battery_soc_t0> * <battery_e>
   
   battery_charging:
     type: Unit
