@@ -1,6 +1,8 @@
 import pandas as pd
 import iesopt
 
+from .util import _pivot_and_clean_results
+
 
 def get_day_ahead_schedule(data: pd.DataFrame, *, battery_soc_t0: float, grid_p_peak_consume: float) -> pd.DataFrame:
     """
@@ -33,27 +35,14 @@ def get_day_ahead_schedule(data: pd.DataFrame, *, battery_soc_t0: float, grid_p_
     # Run IESopt model.
     model = iesopt.run(
         "opt/config.iesopt.yaml",
-        config={"optimization.snapshots.count": 96},
-        parameters=dict(battery_soc_t0=100, grid_p_peak_consume=100),
+        config={"optimization.snapshots.count": len(data)},
+        parameters=dict(battery_soc_t0=battery_soc_t0, grid_p_peak_consume=grid_p_peak_consume),
         virtual_files=dict(data=data),
     )
 
-    # Prepare model internal information.
-    snapshots = model.internal.model.snapshots
-    battery_state_lb = iesopt.IESopt.access(model.get_component("battery_storage").state_lb)
-    battery_state_ub = iesopt.IESopt.access(model.get_component("battery_storage").state_ub)
-
-    # Extract results.
-    results = model.results.to_pandas()
-
-    # Filter, prepare fullnames, and restore original times.
-    results = results.loc[(results["mode"] == "primal") & ~results["snapshot"].isnull()]
-    results["entry"] = results[["component", "fieldtype", "field"]].agg(".".join, axis=1)
-    t_map = dict(zip([snapshots[t + 1].name for t in range(len(snapshots))], data["time"]))
-    results["time"] = results["snapshot"].apply(lambda t: t_map[t])
-
-    # Pivot results to wide format.
-    results = results.pivot(index="time", columns="entry", values="value")
+    # Extract model internal information and results.
+    battery_e = model.internal.input.parameters["battery_e"]
+    results = _pivot_and_clean_results(model, data["time"])
 
     # Return selected results.
     model = None
@@ -63,8 +52,6 @@ def get_day_ahead_schedule(data: pd.DataFrame, *, battery_soc_t0: float, grid_p_
             "battery_setpoint": (
                 results["battery_discharging.exp.out_electricity"] - results["battery_charging.exp.in_electricity"]
             ),
-            "battery_soc": (
-                (results["battery_storage.var.state"] - battery_state_lb) / (battery_state_ub - battery_state_lb)
-            ),
+            "battery_soc": results["battery_storage.var.state"] / battery_e,
         }
     )
