@@ -2,7 +2,34 @@ import pandas as pd
 import iesopt
 
 
-def get_day_ahead_schedule(data: pd.DataFrame) -> pd.DataFrame:
+def get_day_ahead_schedule(data: pd.DataFrame, *, battery_soc_t0: float, grid_p_peak_consume: float) -> pd.DataFrame:
+    """
+    Calculates the day-ahead schedule based on the provided data.
+
+    This function runs the IESopt model with the provided data and parameters to generate a day-ahead schedule.
+    It expects the data to start at midnight (00:00:00) and contain at least 96 entries (representing a full day in
+    15-minute intervals). All input values are given in `kW` except for `price` (EUR/kWh) and `battery_soc_t0` (0-1).
+
+    Args:
+        data (pd.DataFrame): DataFrame containing the day-ahead data with columns `time`, `pv_s`, `pv_l`, `demand_s`, 
+                             `demand_l`, `demand_g`, and `price`.
+        battery_soc_t0 (float): Initial state of charge of the battery at the start of the day.
+        grid_p_peak_consume (float): Already realized (previous) peak consumption from the grid.
+
+    Returns:
+        pd.DataFrame: DataFrame containing the day-ahead schedule with columns `schedule` (given in kW, positive values
+                      correspond to consumption, negative values to feed-in), `battery_setpoint` (kW, positive values
+                      correspond to discharging, negative values to charging), and `battery_soc` (0-1, scaled to the
+                      battery's total - not usable - capacity).
+    """
+    t0 = data["time"].iloc[0]
+    if t0.hour != 0 or t0.minute != 0 or t0.second != 0:
+        raise ValueError("Data must start at midnight (00:00:00) of the day (-ahead) to be scheduled.")
+    if len(data) < 96:
+        raise ValueError("Data must contain at least 96 entries (a full day in 15-minute intervals).")
+    
+    # TODO: Check for proper 15-minute intervals.
+
     # Run IESopt model.
     model = iesopt.run(
         "opt/config.iesopt.yaml",
