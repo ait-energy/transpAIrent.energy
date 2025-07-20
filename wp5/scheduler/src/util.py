@@ -5,7 +5,7 @@ import iesopt
 
 def make_example_data():
     """Returns a full day (24 hours as 96x 15 minutes) of example data for the day-ahead scheduling model.
-    
+
     The data includes:
     - Timestamps in 15-minute intervals
     - PV generation (small and large)
@@ -28,15 +28,16 @@ def make_example_data():
         }
     )
 
+
 def normalize_to_eom(data: pd.DataFrame) -> pd.DataFrame:
     """Normalizes the passed DataFrame to the extend until the last 15 minute block of the month.
-    
+
     This is useful to ensure that the data covers a full month, as required by the IESopt model to properly account for
     the monthly peak consumption.
 
     Args:
         data (pd.DataFrame): DataFrame with a 'time' column containing timestamps.
-    
+
     Returns:
         pd.DataFrame: DataFrame with the 'time' column extended to the end of the month.
     """
@@ -50,6 +51,7 @@ def normalize_to_eom(data: pd.DataFrame) -> pd.DataFrame:
         tmp["time"] = tmp["time"] + delta_t
         data = pd.concat([data, tmp], ignore_index=True)
     return data.loc[data["time"] <= end_of_month]
+
 
 def _pivot_and_clean_results(model: iesopt.Model, timestamps: pd.Series) -> pd.DataFrame:
     # Extract results.

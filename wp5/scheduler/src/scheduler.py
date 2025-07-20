@@ -13,7 +13,7 @@ def get_day_ahead_schedule(data: pd.DataFrame, *, battery_soc_t0: float, grid_p_
     15-minute intervals). All input values are given in `kW` except for `price` (EUR/kWh) and `battery_soc_t0` (0-1).
 
     Args:
-        data (pd.DataFrame): DataFrame containing the day-ahead data with columns `time`, `pv_s`, `pv_l`, `demand_s`, 
+        data (pd.DataFrame): DataFrame containing the day-ahead data with columns `time`, `pv_s`, `pv_l`, `demand_s`,
                              `demand_l`, `demand_g`, and `price`.
         battery_soc_t0 (float): Initial state of charge of the battery at the start of the day.
         grid_p_peak_consume (float): Already realized (previous) peak consumption from the grid.
@@ -29,7 +29,7 @@ def get_day_ahead_schedule(data: pd.DataFrame, *, battery_soc_t0: float, grid_p_
         raise ValueError("Data must start at midnight (00:00:00) of the day (-ahead) to be scheduled.")
     if len(data) < 96:
         raise ValueError("Data must contain at least 96 entries (a full day in 15-minute intervals).")
-    
+
     # TODO: Check for proper 15-minute intervals.
 
     # Run IESopt model.
