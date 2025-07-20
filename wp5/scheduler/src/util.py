@@ -2,10 +2,17 @@ import iesopt
 
 
 def make_example_data():
-    """Returns a full day (96 hours) of example data for the day-ahead scheduling model."""
-    import numpy as np
-    import pandas as pd
+    """Returns a full day (24 hours as 96x 15 minutes) of example data for the day-ahead scheduling model.
+    
+    The data includes:
+    - Timestamps in 15-minute intervals
+    - PV generation (small and large)
+    - Demand (small, large, and general)
+    - Day-ahead price data
 
+    Returns:
+        pd.DataFrame: DataFrame with columns `time`, `pv_s`, `pv_l`, `demand_s`, `demand_l`, `demand_g`, and `price`.
+    """
     rng = np.random.default_rng(seed=42)
     return pd.DataFrame(
         {
