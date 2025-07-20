@@ -26,8 +26,30 @@ def make_example_data():
         }
     )
 
+def normalize_to_eom(data: pd.DataFrame) -> pd.DataFrame:
+    """Normalizes the passed DataFrame to the extend until the last 15 minute block of the month.
+    
+    This is useful to ensure that the data covers a full month, as required by the IESopt model to properly account for
+    the monthly peak consumption.
 
-def pivot_and_clean_results(model: iesopt.Model, ):
+    Args:
+        data (pd.DataFrame): DataFrame with a 'time' column containing timestamps.
+    
+    Returns:
+        pd.DataFrame: DataFrame with the 'time' column extended to the end of the month.
+    """
+    t0: pd.Timestamp = data["time"].iloc[0]
+    end_of_month = t0.replace(day=1) + pd.DateOffset(months=1) - pd.Timedelta(minutes=15)
+    data = data.loc[data["time"] <= end_of_month]
+
+    while data["time"].iloc[-1] < end_of_month:
+        tmp = data.copy()
+        delta_t = data["time"].iloc[-1] - data["time"].iloc[0] + pd.Timedelta(minutes=15)
+        tmp["time"] = tmp["time"] + delta_t
+        data = pd.concat([data, tmp], ignore_index=True)
+    return data.loc[data["time"] <= end_of_month]
+
+def _pivot_and_clean_results(model: iesopt.Model, timestamps: pd.Series) -> pd.DataFrame:
     # Extract results.
     snapshots = model.internal.model.snapshots
     results = model.results.to_pandas()
