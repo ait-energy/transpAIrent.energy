@@ -1,3 +1,5 @@
+import pandas as pd
+import numpy as np
 import iesopt
 
 
@@ -57,9 +59,8 @@ def _pivot_and_clean_results(model: iesopt.Model, timestamps: pd.Series) -> pd.D
     # Filter, prepare fullnames, and restore original times.
     results = results.loc[(results["mode"] == "primal") & ~results["snapshot"].isnull()]
     results["entry"] = results[["component", "fieldtype", "field"]].agg(".".join, axis=1)
-    t_map = dict(zip([snapshots[t + 1].name for t in range(len(snapshots))], data["time"]))
+    t_map = dict(zip([snapshots[t + 1].name for t in range(len(snapshots))], timestamps))
     results["time"] = results["snapshot"].apply(lambda t: t_map[t])
 
     # Pivot results to wide format.
-    return results.pivot(index="time", columns="entry", values="value")
-
+    return results.pivot(index="time", columns="entry", values="value").loc[timestamps.iloc[0:96]]
