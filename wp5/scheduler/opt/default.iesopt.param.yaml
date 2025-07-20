@@ -1,0 +1,28 @@
+# ----------------- SOLAR PV ------------------
+pv_curtailment_factor: 1.0      # [1] Factor by how much the PV can be curtailed related to its current generation
+
+# ------------------ BATTERY ------------------
+
+battery_p: 1200.0               # [kW] Rated power of the battery
+battery_e: 5702.0               # [kWh] Energy capacity of the battery
+battery_eta: 0.90               # [1] Total roundtrip efficiency of the battery
+battery_loss: 0.0006            # [1] Self-discharge rate of the battery, per hour
+battery_soc_min: 0.00           # [1] Minimum state of charge of the battery
+battery_soc_max: 0.90           # [1] Maximum state of charge of the battery
+battery_soc_t0: null            # [1] Initial state of charge of the battery
+battery_vom: 0.065              # [EUR/kWh] Costs associated with charging+discharging the battery by 1 kWh
+
+# --------------- GRID TARIFFS ----------------
+
+grid_p_max_consume: 1010.0      # [kW] Maximum rated power of the grid connection (consumption)
+grid_p_max_feedin: 990.0        # [kW] Maximum rated power of the grid connection (feed-in)
+grid_p_peak_consume: null       # [kW] Already utilized peak power of the grid connection during the current month
+grid_cost_e_consume: 0.03324    # [EUR/kWh] Energy cost of consuming electricity from the grid
+grid_cost_e_feedin: 0.0         # [EUR/kWh] Energy cost of feeding electricity into the grid
+grid_cost_p_consume: 6.19633    # [EUR/kW] Power cost of the grid connection, for the current month (so divided by 12!)
+
+# ---------- DATA SOURCES / NOTES -------------
+# grid_cost_p_consume: based on `74.3560 EUR/kW/a`, divided by 12 months
+# grid_cost_e_feedin:  0.0, since grid connection less than 5 MW
+# grid tariffs based on `AT_NOE_NE5_2025`
+# grid tariffs do not include the final 20% VAT
